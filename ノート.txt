@@ -1,0 +1,124 @@
+Docker ノート　
+
+[docker run -v]
+・コンテナにボリュームをマウント
+・共有なので双方に保存される
+例）　docker run -v　ホストのパス:コンテナのパスイメージ名
+↓↓↓↓↓↓↓↓↓↓↓↓
+例）docker run -v /Users/uchida/source:/var/www/html イメージ名
+
+ホスト側                   どっかー側
+/Users/uchida/source      /var/www/html
+
+
+[docker-machine ip]
+・windowsでどっかーツールボックスを使用する場合、
+　dockerの場所がIPアドレスで区切られた場所にいるらしい
+・このIPアドレスを使ってコンテナにアクセスする
+ウェブで作ったコンテナにアクセスしたい場合（docker tool box使用時）
+192.168.99.100.[ポート番号](192.168.99.100/8080とか)でアクセス可能
+（macとかだったらlocalhost8080とかでアクセスできるみたい。）
+・アクセスするときのURL→[192.168.99.100:8080]こんな感じ
+
+[-p オプション：ポートフォワーディングオプション]
+docker run -p 8080:80 nginx:1.16
+・使用してイプパソコンからアクセスするときのポート番号：コンテナ内(この例でいうとnginx)の中からアクセスするときのポート番号
+
+本番環境
+データベースはコンテナ化せず、ウェブサーバーをコンテナ化して
+DBはAWSみたいなサービスに任せる。
+
+
+[Docker fileとは？]
+Dockerイメージをコード化したもの
+Dockerファイルを使うと
+・ファイルを読むと構成がわかる
+・オリジナルイメージを作成できる
+・設定ファイルなども変更できる
+
+dockerベストプラクティス
+・dockerはフェメラルであるべき（＝状態を持たないべき）
+・余計なファイルを置かない
+・不要なパッケージのインストールを避ける（極力シンプルに）
+・コンテナごとに一つのプロセスだけ実行
+　（webサーバ、DBサーバ、キャッシュサーバ等複数サーバーを
+　　それぞれ1つずつコンテナを用意して、組み合わせてwebサーバーのような
+　　動きをマネするやつつくローゼみたいな）
+・レイヤーの数少なく（？）
+・ファイルは読みやすく（へぇ？）
+
+Dockerfile
+----------------------------------------------------------------
+FROM ubuntu:20.04
+
+MAINTAINER pa-kun
+
+RUN apt-get update && apt-get install -y nginx
+
+CMD ["nginx", "-g", "daemon off;"]
+-------------------------------------------------------------
+
+→Dockerファイルは拡張子のないファイル
+→.dockerfile配下にrunフォルダを作成 .dockerfile/run/Dockerfile
+
+
+[RUNとCMD]
+・どちらもコマンドを実行
+・実行タイミングが異なる
+https://rara-world.com/dockerfile-run-cmd/#:~:text=RUN%E5%91%BD%E4%BB%A4%E3%81%AFDockerfile%E3%81%8B%E3%82%89Image%E3%82%92%E4%BD%9C%E6%88%90%E3%81%99%E3%82%8B%E3%81%A8%E3%81%8D%E3%81%AB%E5%AE%9F%E8%A1%8C%E3%81%95%E3%82%8C%E3%81%BE%E3%81%99%E3%80%82%20CMD%E5%91%BD%E4%BB%A4%E3%81%AFDocker%E3%82%A4%E3%83%A1%E3%83%BC%E3%82%B8%E3%81%8B%E3%82%89Docker%E3%82%B3%E3%83%B3%E3%83%86%E3%83%8A%E3%82%92%E4%BD%9C%E6%88%90%E3%81%99%E3%82%8B%E3%81%A8%E3%81%8D%E3%81%AB%E5%AE%9F%E8%A1%8C%E3%81%95%E3%82%8C%E3%81%BE%E3%81%99%E3%80%82,%E4%B8%A1%E8%80%85%E3%81%AE%E9%81%95%E3%81%84%E3%81%AF%E3%80%81%E5%AE%9F%E8%A1%8C%E3%81%95%E3%82%8C%E3%82%8B%E3%82%BF%E3%82%A4%E3%83%9F%E3%83%B3%E3%82%B0%E3%81%AE%E9%81%95%E3%81%84%E3%81%A7%E3%81%99%E3%80%82%20RUN%E5%91%BD%E4%BB%A4%E3%81%AFimage%E3%82%92%E4%BD%9C%E6%88%90%E3%81%99%E3%82%8B%E3%81%A8%E3%81%8D%E3%81%AB%E4%B8%80%E5%BA%A6%E3%81%A0%E3%81%91%E5%AE%9F%E8%A1%8C%E3%81%95%E3%82%8C%E3%82%8B%E5%91%BD%E4%BB%A4%E3%81%AA%E3%81%AE%E3%81%A7%E3%80%81image%E3%81%AB%E3%83%91%E3%83%83%E3%82%B1%E3%83%BC%E3%82%B8%E3%82%92%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB%E3%81%99%E3%82%8B%E3%81%AA%E3%81%A9%E3%81%AE%E5%87%A6%E7%90%86%E3%81%8C%E8%A8%98%E8%BF%B0%E3%81%95%E3%82%8C%E3%81%BE%E3%81%99%E3%80%82
+
+
+RUN:Dockerfile→イメージ
+    Dockerfileからdokcerイメージにビルドするときに一回だけ実行するコマンド
+CMD:イメージ→コンテナ
+    dockerfileからできたdockerイメージをコンテナ化するときに実行されるコマンド
+    例）CMD["executable", "param1","param2"]
+       ・ダブルクォーテーションじゃないとダメ
+       ・スペースがあくごとに分ける
+
+
+[COPYとADD]
+・ファイルをイメージに追加するコマンド
+・ADD :ネットや圧縮ファイルからも追加できる
+・COPY:ローカルから追加、公式推奨
+
+例)COPY
+COPY ホストのファイル コンテナのパス
+ホストのファイルがコンテナのパスにコピーされる
+
+コピーの使いどころ
+・イメージにプログラムのソースコードを入れたい場合
+・設定ファイルをソフトに入れておいて、設定ファイルが反映された状態でイメージを作りたい場合
+
+[ENV]
+・環境変数を設定
+　・DBのユーザー名など
+・直接書き込むので固定値になってしまう。（ユーザーによって変えられない（は？））
+
+例）ENV DB_USER uchida
+
+Dockerfile
+-------------------------------------------------------
+FROM mariadb:10.4
+RUN apt-get update -y
+COPY my.conf /etc/mysql/conf.d
+//docker-entrypoint-initdb.dにテーブル作成コマンドなどが書かれたファイルをコピーすると、データベースが作られたときに自動で実行される
+COPY create-table.spl /docker-entrypoint-initdb.d 
+ENV MYSQL_USER=root
+// ENV MYSQL_DATABASE=docker dockerという名前のデータベースが作成される 
+ENV MYSQL_DATABASE=docker
+ENV MYSQL_ROOT_PASSWORD=root
+-------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+・できなかったところ
+No.38
+docker run -v /Users/sorao/workspace/udemy/docker_practice/test:/usr/share/nginx/html --name mynginx -p 8080:80 nginx:1.16

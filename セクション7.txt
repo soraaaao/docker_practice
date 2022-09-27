@@ -1,0 +1,185 @@
+lecture48
+[docker compose]
+・複数のコンテナを連携させて一括で管理するもの
+・yamlファイルの設計図
+・コンテナの立ち上げを自動化
+
+[yamlファイルとは]
+・スペースで親子関係を表現するファイル形式
+・設定ファイルなどによく使われる
+・docker-composeのやむるファイルには最初に必ず
+　version: "aa",
+  services: ...
+  という文言が入る。
+  --------------------------------------------------
+  例）
+  version: "3",
+  services: 
+    web: 
+      build: ./php
+    db:
+      image: mariadb: 10.4
+  --------------------------------------------------
+    →webとdbという２つのコンテナが動きますよという意味
+　　→サービス名は任意で名前を付けることができる
+
+[dicker --link]
+・２つのコンテナを連携
+
+
+lecture49
+[相対パスと絶対パス]
+相対パス
+→docker-composeから見たパス
+→./php (同じ改装にあるphpフォルダ)
+
+相対パス
+コンピューターのディスクから見たパス
+→/Users/sorao/source/php
+
+
+
+lecture50
+[imageとbuild]
+コンテナイメージを指定する
+image: DockerHubからの指定
+build: Dockerfileのパスを指定
+  --------------------------------------------------
+  例）
+  version: "3",
+  services: 
+    web: 
+      build: ./php
+    db:
+      image: mariadb: 10.4
+  
+  →DockerHubのイメージを直接指定するのがimage
+  →DockerfileからDockerイメージを作るのがbuild
+  →Docker-composeファイルと同じ階層にphpというディレクトリを作り
+   その中にDockerfileを入れておくとwebというコンテナは
+   指定したDockerfileをイメージ化してコンテナ化しますよ
+   ってことになる、らちい
+　→コンテナ（services配下）にはbuildかimageを指定しないとエラーになる
+  →カスタマイズする必要がないならimageを指定する
+  --------------------------------------------------
+
+
+
+
+lecture51
+[container_name]
+・コンテナに任意の名前を自由につけることができる
+・docker run --nameと同じ
+・ダブルクォーテーションで囲う
+・すべてのサービスにつけておくのがおすすめ
+
+  --------------------------------------------------
+  例）
+  version: "3",
+  services: 
+    web: 
+      build: ./php
+      container_name: "php8"
+    db:
+      image: mariadb: 10.4
+      container_name: "db2"
+  --------------------------------------------------
+
+
+
+lecture52
+[volume]
+・コンテナとホストのディレクトリを共有する
+・volume: ホストのパス:コンテナのパス　で指定する
+・docker run -vと同じ
+・コードや設定ファイルに使う
+・相対パスがおすすめらしい
+
+  --------------------------------------------------
+  例）
+  version: "3",
+  services: 
+    db:
+      volume:
+        ./data:/var/lib/mysql 
+  --------------------------------------------------
+
+
+
+lecture53
+[ports]
+・コンテナのポート開放とポートフォワーディング
+・ports: 外部公開ポート:コンテナ内部ポート　で指定する
+・docker run -p と同じ
+・ポートが被らないようにできる
+
+  --------------------------------------------------
+  例）
+  version: "3",
+  services: 
+    web: 
+      image: php:8.0 
+      ports:
+        "8080:80"
+      db:
+  
+  →ports:　の後は改行しなきゃいけないらしい
+  →webサーバーって基本80ポートらしい
+  --------------------------------------------------
+
+
+
+lecture54
+[コンテナ間通信の方法]
+・サービス名がIPアドレスに変換される
+
+  --------------------------------------------------
+  例）
+  version: "3",
+  services: 
+    //↓これはコンテナ名ではないが、dockercomposeで作られるときに使えるサービス名
+    web: 
+      image: php:8.0 
+      ports:
+        "8080:80"
+      db:
+  
+  →dockercomposeyamlで作成したコンテナは(web, db)小さなネットワークで囲われている
+  →そのネットワークの中でサービス名を指定するとそれがコンテナの内部IPアドレスに変換される
+  --------------------------------------------------
+
+
+
+
+lecture54
+[docker-compose down]
+・docker-compose.yml出管理されているコンテナのストップ＆削除を同時にしてくれる
+・今いるディレクトリのdocker-compose.ymlのみ適用
+・もし今の改装にdocker-compose.ymlがない場合は上の階層を探しに行く。
+
+[docker-compose restart]
+・docker-compose.ymlで管理されているコンテナをすべて再起動
+
+[docker-compose ps]
+・docker-compose.ymlで管理されているコンテナ一覧を表示
+・複数プロジェクトを立ち上げている際に用いると読みやすい
+
+[docker-compose run]
+・docker-compose.yml出管理されているサービス１つを指定してコマンドを実行
+・ビルド前でも実行可能なコマンド
+・ビルド前のフレームワークのインストールなどに使うと便利
+
+
+
+
+
+
+
+
+
+
+
+
+エラー起きたレクチャー
+lecture55：Error establishing a database connection
+　　　　　　教材のものdocker-compose up -d したのに・・・なんでぇ
